@@ -20,6 +20,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 powershell '''
+                    Set-Location furab-backend
                     Write-Host "Running unit tests..."
                     $services = Get-ChildItem -Path services -Directory
                     foreach ($s in $services) {
@@ -42,6 +43,7 @@ pipeline {
         stage('Lint/Vet') {
             steps {
                 powershell '''
+                    Set-Location furab-backend
                     Write-Host "Running go vet..."
                     $services = Get-ChildItem -Path services -Directory
                     foreach ($s in $services) {
@@ -58,11 +60,13 @@ pipeline {
         stage('Build Image') {
             steps {
                 powershell '''
+                    Set-Location furab-backend
                     Write-Host "Building Docker images..."
                     $services = Get-ChildItem -Path services -Directory
                     foreach ($s in $services) {
                         Write-Host "=== Building: $($s.Name) ==="
                         docker build -t "$env:DOCKER_REGISTRY/$($s.Name):$env:BUILD_NUMBER" -t "$env:DOCKER_REGISTRY/$($s.Name):latest" -f "$($s.FullName)/Dockerfile" .
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                     }
                 '''
             }
@@ -72,10 +76,24 @@ pipeline {
         stage('Functional Tests') {
             steps {
                 powershell '''
-                    Write-Host "Starting test infrastructure..."
-                    docker compose -f deploy/docker/docker-compose.yml up -d postgres kafka rabbitmq redis
-
-                    Write-Host "Waiting for services to be ready..."
+                    Set-Location furab-backend
+                    Write-Host "Starting test infrastructure sequentially to prevent Docker crash..."
+                    Write-Host "Starting Postgres..."
+                    docker compose -f deploy/docker/docker-compose.yml up -d postgres
+                    Start-Sleep -Seconds 5
+                    
+                    Write-Host "Starting Redis..."
+                    docker compose -f deploy/docker/docker-compose.yml up -d redis
+                    Start-Sleep -Seconds 5
+                    
+                    Write-Host "Starting RabbitMQ..."
+                    docker compose -f deploy/docker/docker-compose.yml up -d rabbitmq
+                    Start-Sleep -Seconds 5
+                    
+                    Write-Host "Starting Kafka (and Zookeeper)..."
+                    docker compose -f deploy/docker/docker-compose.yml up -d kafka
+                    
+                    Write-Host "Waiting for all services to be fully ready..."
                     Start-Sleep -Seconds 15
 
                     Write-Host "Running functional tests..."
@@ -91,7 +109,7 @@ pipeline {
             }
             post {
                 always {
-                    powershell 'docker compose -f deploy/docker/docker-compose.yml down'
+                    powershell 'Set-Location furab-backend; docker compose -f deploy/docker/docker-compose.yml down'
                 }
             }
         }
@@ -103,6 +121,7 @@ pipeline {
             }
             steps {
                 powershell '''
+                    Set-Location furab-backend
                     Write-Host "Pushing Docker images..."
                     $services = Get-ChildItem -Path services -Directory
                     foreach ($s in $services) {
@@ -121,6 +140,7 @@ pipeline {
             }
             steps {
                 powershell '''
+                    Set-Location furab-backend
                     Write-Host "Deploying to Kubernetes..."
                     kubectl apply -f deploy/kubernetes/namespace.yaml
 
