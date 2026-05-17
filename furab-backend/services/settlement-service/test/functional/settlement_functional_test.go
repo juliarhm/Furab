@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -37,10 +38,34 @@ func TestMain(m *testing.M) {
 	dbPassword := getEnvOrDefault("DB_PASSWORD", "furab_secret")
 	dbName := getEnvOrDefault("DB_NAME", "settlement_service")
 
+	// 1. Open default postgres database to auto-create target database
+	defaultConn := fmt.Sprintf("postgres://%s:%s@%s:%s/postgres?sslmode=disable",
+		dbUser, dbPassword, dbHost, dbPort)
+	adminDB, err := sql.Open("pgx", defaultConn)
+	if err != nil {
+		log.Fatalf("Failed to open default database: %v", err)
+	}
+	for i := 0; i < 30; i++ {
+		err = adminDB.Ping()
+		if err == nil {
+			break
+		}
+		log.Printf("Waiting for default database... attempt %d/30: %v", i+1, err)
+		time.Sleep(1 * time.Second)
+	}
+	if err != nil {
+		log.Fatalf("Could not connect to default database after 30 attempts: %v", err)
+	}
+	_, err = adminDB.Exec("CREATE DATABASE " + dbName)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		log.Fatalf("Failed to create database: %v", err)
+	}
+	adminDB.Close()
+
+	// 2. Connect to the target settlement_service database
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser, dbPassword, dbHost, dbPort, dbName)
 
-	var err error
 	testDB, err = sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to test database: %v", err)

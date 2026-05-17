@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"furab-backend/services/wallet-service/internal/model"
 	"furab-backend/services/wallet-service/internal/repository"
 	"furab-backend/services/wallet-service/internal/service"
 
@@ -144,7 +143,7 @@ func TestFunctional_WalletLifecycle(t *testing.T) {
 	cleanupTables()
 	ctx := context.Background()
 	userID := "user-func-001"
-	
+
 	// 1. Create Wallet with initial 0 balance
 	createTestWallet(t, userID, 0)
 
