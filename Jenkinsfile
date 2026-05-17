@@ -5,6 +5,7 @@ pipeline {
         DOCKER_REGISTRY = 'registry.furab.io'
         KUBE_NAMESPACE  = 'furab'
         GO_VERSION      = '1.22'
+        DB_PORT         = '5433'
     }
 
     stages {

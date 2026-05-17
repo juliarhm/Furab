@@ -23,7 +23,11 @@ import (
 var testDB *sql.DB
 
 func TestMain(m *testing.M) {
-	defaultConn := "host=127.0.0.1 port=5432 user=furab password=furab_secret dbname=postgres sslmode=disable"
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+	defaultConn := "host=127.0.0.1 port=" + dbPort + " user=furab password=furab_secret dbname=postgres sslmode=disable"
 	adminDB, err := sql.Open("postgres", defaultConn)
 	if err != nil {
 		log.Fatalf("Failed to open default database: %v", err)
@@ -47,7 +51,7 @@ func TestMain(m *testing.M) {
 
 	connStr := os.Getenv("TEST_DB_URL")
 	if connStr == "" {
-		connStr = "host=127.0.0.1 port=5432 user=furab password=furab_secret dbname=rating_service sslmode=disable"
+		connStr = "host=127.0.0.1 port=" + dbPort + " user=furab password=furab_secret dbname=rating_service sslmode=disable"
 	}
 	testDB, err = sql.Open("postgres", connStr)
 	if err != nil {
