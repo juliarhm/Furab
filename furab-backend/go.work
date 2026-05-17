@@ -1,0 +1,29 @@
+go 1.25.0
+
+use (
+	./gateway/api-gateway
+	./services/audit-log-service
+	./services/auth-service
+	./services/cart-service
+	./services/chat-service
+	./services/driver-service
+	./services/email-service
+	./services/emergency-service
+	./services/food-order-service
+	./services/location-service
+	./services/matching-service
+	./services/menu-service
+	./services/merchant-service
+	./services/notification-service
+	./services/otp-service
+	./services/payment-service
+	./services/pricing-service
+	./services/promo-service
+	./services/rating-service
+	./services/review-service
+	./services/ride-order-service
+	./services/settlement-service
+	./services/user-service
+	./services/wallet-service
+	./shared
+)

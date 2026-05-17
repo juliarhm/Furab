@@ -1,0 +1,138 @@
+erDiagram
+    users {
+        VARCHAR_36 id PK
+        VARCHAR_255 email UK
+        VARCHAR_20 phone UK
+        VARCHAR_255 password_hash
+        VARCHAR_20 role
+        BOOLEAN is_verified
+        BOOLEAN is_active
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    sessions {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id FK
+        TEXT token
+        VARCHAR_50 ip_address
+        TEXT user_agent
+        TIMESTAMPTZ expires_at
+        TIMESTAMPTZ created_at
+    }
+
+    refresh_tokens {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id FK
+        VARCHAR_255 token_hash UK
+        TIMESTAMPTZ expires_at
+        BOOLEAN revoked
+        TIMESTAMPTZ created_at
+    }
+
+    user_profiles {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id UK
+        VARCHAR_255 full_name
+        VARCHAR_20 phone
+        VARCHAR_255 email
+        TEXT photo_url
+        DATE date_of_birth
+        VARCHAR_10 gender
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    user_addresses {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id FK
+        VARCHAR_50 label
+        TEXT address
+        DOUBLE latitude
+        DOUBLE longitude
+        BOOLEAN is_default
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    otp_requests {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_255 destination
+        VARCHAR_10 otp_code
+        VARCHAR_20 otp_type
+        BOOLEAN is_verified
+        INT attempts
+        TIMESTAMPTZ expires_at
+        TIMESTAMPTZ created_at
+    }
+
+    otp_verifications {
+        VARCHAR_36 id PK
+        VARCHAR_36 otp_request_id FK
+        TIMESTAMPTZ verified_at
+        VARCHAR_50 ip_address
+    }
+
+    driver_profiles {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id UK
+        VARCHAR_255 full_name
+        VARCHAR_20 phone
+        TEXT photo_url
+        VARCHAR_20 license_plate
+        VARCHAR_20 vehicle_type
+        VARCHAR_50 vehicle_brand
+        VARCHAR_50 license_number
+        BOOLEAN is_verified
+        BOOLEAN is_active
+        DOUBLE rating
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    driver_documents {
+        VARCHAR_36 id PK
+        VARCHAR_36 driver_id FK
+        VARCHAR_50 document_type
+        TEXT document_url
+        VARCHAR_20 verification_status
+        TIMESTAMPTZ uploaded_at
+        TIMESTAMPTZ verified_at
+    }
+
+    driver_locations {
+        VARCHAR_36 driver_id PK
+        DOUBLE latitude
+        DOUBLE longitude
+        VARCHAR_20 driver_status
+        TIMESTAMPTZ updated_at
+    }
+
+    driver_status_logs {
+        VARCHAR_36 id PK
+        VARCHAR_36 driver_id FK
+        VARCHAR_20 old_status
+        VARCHAR_20 new_status
+        TIMESTAMPTZ changed_at
+    }
+
+    location_history {
+        VARCHAR_36 id PK
+        VARCHAR_36 driver_id FK
+        DOUBLE latitude
+        DOUBLE longitude
+        TIMESTAMPTZ timestamp
+    }
+
+    users ||--o{ sessions : "user_id"
+    users ||--o{ refresh_tokens : "user_id"
+    users ||--o| user_profiles : "user_id"
+    user_profiles ||--o{ user_addresses : "user_id"
+    users ||--o{ otp_requests : "user_id"
+    otp_requests ||--o| otp_verifications : "otp_request_id"
+    users ||--o| driver_profiles : "user_id"
+    driver_profiles ||--o{ driver_documents : "driver_id"
+    driver_profiles ||--o| driver_locations : "driver_id"
+    driver_locations ||--o{ location_history : "driver_id"
+    driver_locations ||--o{ driver_status_logs : "driver_id"

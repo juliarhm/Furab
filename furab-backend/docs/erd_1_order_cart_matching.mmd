@@ -1,0 +1,101 @@
+erDiagram
+    ride_orders {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_36 driver_id
+        DOUBLE pickup_lat
+        DOUBLE pickup_lng
+        TEXT pickup_address
+        DOUBLE dropoff_lat
+        DOUBLE dropoff_lng
+        TEXT dropoff_address
+        VARCHAR_20 status
+        VARCHAR_20 payment_status
+        DOUBLE fare
+        DOUBLE distance
+        INT estimated_duration
+        VARCHAR_20 cancelled_by
+        TEXT cancel_reason
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    food_orders {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_36 merchant_id
+        VARCHAR_36 driver_id
+        VARCHAR_20 status
+        VARCHAR_20 payment_status
+        DOUBLE sub_total
+        DOUBLE delivery_fee
+        DOUBLE discount
+        DOUBLE total_amount
+        DOUBLE delivery_lat
+        DOUBLE delivery_lng
+        TEXT delivery_address
+        DOUBLE merchant_lat
+        DOUBLE merchant_lng
+        TEXT merchant_address
+        VARCHAR_50 cancelled_by
+        TEXT cancel_reason
+        TEXT notes
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    food_order_items {
+        VARCHAR_36 id PK
+        VARCHAR_36 order_id FK
+        VARCHAR_36 menu_item_id
+        VARCHAR_255 name
+        DOUBLE price
+        INT quantity
+        TEXT notes
+    }
+
+    carts {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_36 merchant_id
+        DOUBLE total_price
+        INT item_count
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    cart_items {
+        VARCHAR_36 id PK
+        VARCHAR_36 cart_id FK
+        VARCHAR_36 menu_item_id
+        VARCHAR_36 merchant_id
+        VARCHAR_255 name
+        DOUBLE price
+        INT quantity
+        TEXT notes
+    }
+
+    match_requests {
+        VARCHAR_36 id PK
+        VARCHAR_36 order_id
+        VARCHAR_10 order_type
+        VARCHAR_36 user_id
+        DOUBLE pickup_lat
+        DOUBLE pickup_lng
+        TEXT pickup_address
+        DOUBLE dropoff_lat
+        DOUBLE dropoff_lng
+        TEXT dropoff_address
+        VARCHAR_20 status
+        VARCHAR_36 driver_id
+        INT attempt_count
+        INT max_attempts
+        DOUBLE radius
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    food_orders ||--o{ food_order_items : "has"
+    carts ||--o{ cart_items : "contains"
+    ride_orders ||--o| match_requests : "order_id"
+    food_orders ||--o| match_requests : "order_id"

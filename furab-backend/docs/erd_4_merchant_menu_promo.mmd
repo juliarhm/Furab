@@ -1,0 +1,55 @@
+erDiagram
+    merchants {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_255 name
+        TEXT address
+        TEXT description
+        DOUBLE rating
+        BOOLEAN is_open
+        DOUBLE latitude
+        DOUBLE longitude
+        VARCHAR_20 phone
+        TEXT image_url
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    menu_items {
+        VARCHAR_36 id PK
+        VARCHAR_36 merchant_id
+        VARCHAR_255 name
+        TEXT description
+        DOUBLE price
+        VARCHAR_50 category
+        TEXT image_url
+        BOOLEAN is_available
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    promos {
+        VARCHAR_36 promo_id PK
+        VARCHAR_50 code UK
+        VARCHAR_20 discount_type
+        DOUBLE discount_value
+        DOUBLE min_purchase
+        DOUBLE max_discount
+        TIMESTAMPTZ expiry_date
+        INT usage_limit
+        INT usage_count
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    promo_usage {
+        VARCHAR_36 id PK
+        VARCHAR_36 promo_id FK
+        VARCHAR_36 user_id
+        VARCHAR_36 order_id
+        DOUBLE discount_amount
+        TIMESTAMPTZ used_at
+    }
+
+    merchants ||--o{ menu_items : "merchant_id"
+    promos ||--o{ promo_usage : "promo_id"

@@ -1,0 +1,76 @@
+erDiagram
+    payment_methods {
+        VARCHAR_36 id PK
+        VARCHAR_100 method_name
+        VARCHAR_50 provider
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    payments {
+        VARCHAR_36 id PK
+        VARCHAR_36 order_id
+        VARCHAR_36 user_id
+        DOUBLE amount
+        DOUBLE final_amount
+        VARCHAR_36 method_id FK
+        TEXT payment_detail
+        VARCHAR_20 payment_status
+        VARCHAR_100 transaction_reference
+        VARCHAR_100 idempotency_key UK
+        TIMESTAMPTZ transaction_time
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    payment_logs {
+        SERIAL id PK
+        VARCHAR_36 payment_id FK
+        VARCHAR_20 status
+        TIMESTAMPTZ timestamp
+    }
+
+    wallets {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id UK
+        DOUBLE balance
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    wallet_transactions {
+        VARCHAR_36 id PK
+        VARCHAR_36 wallet_id FK
+        VARCHAR_36 reference_id
+        DOUBLE amount
+        VARCHAR_20 type
+        VARCHAR_20 status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    settlements {
+        VARCHAR_36 id PK
+        VARCHAR_36 payment_id
+        VARCHAR_36 order_id
+        DOUBLE total_amount
+        DOUBLE driver_amount
+        DOUBLE merchant_amount
+        DOUBLE platform_fee
+        VARCHAR_20 status
+        VARCHAR_100 idempotency_key UK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    pricing_rules {
+        VARCHAR_36 rule_id PK
+        VARCHAR_50 type
+        DOUBLE value
+        TEXT description
+    }
+
+    payment_methods ||--o{ payments : "method_id"
+    payments ||--o{ payment_logs : "payment_id"
+    wallets ||--o{ wallet_transactions : "wallet_id"
+    payments ||--o| settlements : "payment_id"

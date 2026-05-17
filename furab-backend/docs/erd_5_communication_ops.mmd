@@ -1,0 +1,111 @@
+erDiagram
+    chat_sessions {
+        VARCHAR_36 order_id PK
+        VARCHAR_36 user_id
+        VARCHAR_36 driver_id
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ closed_at
+    }
+
+    messages {
+        VARCHAR_36 message_id PK
+        VARCHAR_36 order_id FK
+        VARCHAR_36 sender_id
+        TEXT content
+        VARCHAR_20 read_status
+        TIMESTAMPTZ timestamp
+    }
+
+    notification_templates {
+        VARCHAR_50 event_type PK
+        TEXT title_template
+        TEXT message_template
+    }
+
+    notification_logs {
+        VARCHAR_36 notification_id PK
+        VARCHAR_36 receiver_id
+        VARCHAR_255 title
+        TEXT message
+        VARCHAR_20 channel
+        VARCHAR_20 status
+        VARCHAR_36 reference_id
+        TIMESTAMPTZ timestamp
+    }
+
+    email_templates {
+        VARCHAR_36 template_id PK
+        VARCHAR_255 subject
+        TEXT body
+    }
+
+    email_logs {
+        VARCHAR_36 email_id PK
+        VARCHAR_255 receiver_email
+        VARCHAR_255 subject
+        VARCHAR_20 status
+        VARCHAR_36 receiver_id
+        VARCHAR_36 reference_id
+        TIMESTAMPTZ timestamp
+    }
+
+    ratings {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_36 target_id
+        VARCHAR_20 target_type
+        INT score
+        TEXT comment
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    reviews {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_36 merchant_id
+        VARCHAR_36 order_id
+        INT rating
+        TEXT comment
+        TEXT image_url
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    audit_logs {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_50 action
+        VARCHAR_50 entity
+        VARCHAR_36 entity_id
+        TEXT old_data
+        TEXT new_data
+        VARCHAR_50 ip_address
+        TEXT user_agent
+        TIMESTAMPTZ created_at
+    }
+
+    emergency_events {
+        VARCHAR_36 emergency_id PK
+        VARCHAR_36 actor_id
+        VARCHAR_20 actor_type
+        VARCHAR_36 order_id
+        DOUBLE latitude
+        DOUBLE longitude
+        VARCHAR_30 emergency_type
+        VARCHAR_20 status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ resolved_at
+    }
+
+    emergency_contacts {
+        VARCHAR_36 id PK
+        VARCHAR_36 user_id
+        VARCHAR_255 name
+        VARCHAR_20 phone
+        VARCHAR_255 email
+        BOOLEAN is_primary
+        TIMESTAMPTZ created_at
+    }
+
+    chat_sessions ||--o{ messages : "order_id"

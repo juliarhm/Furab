@@ -1,0 +1,373 @@
+openapi: "3.0.3"
+info:
+  title: Furab Payment Service API
+  description: |
+    API untuk mengelola transaksi pembayaran di platform Furab.
+    Service ini menangani Two-Phase Payment Flow (Authorize & Capture):
+    PENDING → AUTHORIZED → CAPTURED → REFUNDED
+    dengan koordinasi Wallet, Pricing, Promo, dan Settlement Services.
+  version: "1.0.0"
+  contact:
+    name: Furab Backend Team
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /api/v1/payments/health:
+    get:
+      summary: Health Check
+      description: Mengecek apakah payment-service berjalan dengan baik
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: healthy
+                      service:
+                        type: string
+                        example: payment-service
+
+  /api/v1/payments:
+    post:
+      summary: Initiate Payment (Phase 1 - Authorize)
+      description: |
+        Membuat dan mengauthorisasi transaksi pembayaran baru.
+        Flow: 1) Create payment (pending) 2) Lock balance di Wallet 3) Mark as authorized
+        Menggunakan idempotency_key untuk prevent duplicate transactions.
+      operationId: initiatePayment
+      tags:
+        - Payments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitiatePaymentRequest"
+      responses:
+        "201":
+          description: Payment berhasil diauthorisasi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Request tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error (e.g., Wallet lock failed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/payments/{paymentID}:
+    get:
+      summary: Get Payment Details
+      description: Mengambil detail transaksi pembayaran berdasarkan payment ID
+      operationId: getPayment
+      tags:
+        - Payments
+      parameters:
+        - name: paymentID
+          in: path
+          required: true
+          schema:
+            type: string
+            description: UUID dari payment
+      responses:
+        "200":
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "404":
+          description: Payment tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/payments/{paymentID}/capture:
+    put:
+      summary: Capture Payment (Phase 2 - Capture)
+      description: |
+        Menyelesaikan transaksi pembayaran yang sudah di-authorize.
+        Flow: 1) Verify status is authorized 2) Deduct balance dari Wallet 3) Mark as captured 4) Trigger Settlement
+        Hanya payment dengan status "authorized" yang bisa di-capture.
+      operationId: capturePayment
+      tags:
+        - Payments
+      parameters:
+        - name: paymentID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment berhasil di-capture
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Payment tidak bisa di-capture (wrong status atau error)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Payment tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error (e.g., Wallet deduction failed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/payments/{paymentID}/cancel:
+    put:
+      summary: Cancel Payment
+      description: |
+        Membatalkan transaksi pembayaran.
+        Flow: 1) Verify status is pending or authorized 2) Unlock balance dari Wallet 3) Mark as cancelled
+        Hanya payment dengan status "pending" atau "authorized" yang bisa di-cancel.
+      operationId: cancelPayment
+      tags:
+        - Payments
+      parameters:
+        - name: paymentID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment berhasil di-cancel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Payment tidak bisa di-cancel (wrong status)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Payment tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error (e.g., Wallet unlock failed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/payments/{paymentID}/refund:
+    put:
+      summary: Refund Payment
+      description: |
+        Refund transaksi pembayaran yang sudah di-capture.
+        Flow: 1) Verify status is captured 2) Credit balance ke Wallet 3) Mark as refunded
+        Hanya payment dengan status "captured" yang bisa di-refund.
+      operationId: refundPayment
+      tags:
+        - Payments
+      parameters:
+        - name: paymentID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment berhasil di-refund
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Payment tidak bisa di-refund (wrong status)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Payment tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error (e.g., Wallet credit failed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    InitiatePaymentRequest:
+      type: object
+      required:
+        - order_id
+        - user_id
+        - payment_method
+        - payment_detail
+        - amount
+      properties:
+        order_id:
+          type: string
+          description: Reference ke order_id dari food-order-service atau ride-order-service
+          example: order-12345
+        user_id:
+          type: string
+          description: User yang melakukan pembayaran
+          example: user-67890
+        payment_method:
+          type: string
+          description: ID dari payment method yang terdaftar
+          example: credit-card-001
+        payment_detail:
+          type: string
+          description: Detail pembayaran (encrypted atau serialized JSON)
+          example: '{"card_last_4":"1234","card_brand":"VISA"}'
+        promo_code:
+          type: string
+          description: Optional promo code untuk diskon
+          example: PROMO2024
+        amount:
+          type: number
+          format: double
+          description: Nominal pembayaran dalam IDR (Rupiah). Jika 0, akan diambil dari Pricing Service
+          example: 100000
+        idempotency_key:
+          type: string
+          description: Unique key dari client untuk prevent duplicate transactions
+          example: 550e8400-e29b-41d4-a716-446655440000
+
+    PaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/Payment"
+        message:
+          type: string
+          example: payment initiated successfully
+
+    Payment:
+      type: object
+      properties:
+        payment_id:
+          type: string
+          description: UUID dari transaksi pembayaran
+          example: pay-88888
+        order_id:
+          type: string
+          example: order-12345
+        user_id:
+          type: string
+          example: user-67890
+        amount:
+          type: number
+          format: double
+          description: Nominal asli dalam IDR
+          example: 100000
+        final_amount:
+          type: number
+          format: double
+          description: Nominal setelah diskon dari promo
+          example: 85000
+        payment_method:
+          type: string
+          example: credit-card-001
+        payment_detail:
+          type: string
+          example: '{"card_last_4":"1234","card_brand":"VISA"}'
+        payment_status:
+          type: string
+          enum:
+            - pending
+            - authorized
+            - captured
+            - refunded
+            - failed
+            - cancelled
+          description: Status transaksi
+          example: authorized
+        transaction_reference:
+          type: string
+          description: Reference string untuk reconciliation
+          example: TXN-order-12345
+        transaction_time:
+          type: string
+          format: date-time
+          description: Waktu transaksi
+          example: "2024-01-15T10:30:00Z"
+        idempotency_key:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:35:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+          example: payment not found
+        code:
+          type: string
+          description: Error code untuk client handling
+          example: PAYMENT_NOT_FOUND
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+          example: payment-service

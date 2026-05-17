@@ -1,0 +1,329 @@
+openapi: "3.0.3"
+info:
+  title: Furab Ride Order Service API
+  description: |
+    API untuk mengelola pesanan ride (ojek online) di platform Furab.
+    Service ini menangani lifecycle lengkap dari pemesanan ride:
+    PENDING → ASSIGNED → STARTED → COMPLETED | CANCELLED
+  version: "1.0.0"
+  contact:
+    name: Furab Backend Team
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Mengecek apakah service berjalan dengan baik
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: healthy
+                      service:
+                        type: string
+                        example: ride-order-service
+
+  /api/v1/rides:
+    post:
+      summary: Buat Pesanan Ride Baru
+      description: Membuat pesanan ride baru dengan lokasi pickup dan dropoff
+      operationId: createRideOrder
+      tags:
+        - Rides
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRideOrderRequest"
+      responses:
+        "201":
+          description: Ride order berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RideOrderResponse"
+        "400":
+          description: Request tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/rides/{orderID}:
+    get:
+      summary: Ambil Detail Ride
+      description: Mengambil detail pesanan ride berdasarkan ID
+      operationId: getRideOrder
+      tags:
+        - Rides
+      parameters:
+        - name: orderID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Detail ride order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RideOrderResponse"
+        "404":
+          description: Order tidak ditemukan
+
+  /api/v1/rides/{orderID}/assign:
+    put:
+      summary: Assign Driver
+      description: Meng-assign driver ke ride order yang berstatus PENDING
+      operationId: assignDriver
+      tags:
+        - Rides
+      parameters:
+        - name: orderID
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignDriverRequest"
+      responses:
+        "200":
+          description: Driver berhasil di-assign
+        "404":
+          description: Order tidak ditemukan
+        "409":
+          description: Status tidak valid untuk assign
+
+  /api/v1/rides/{orderID}/start:
+    put:
+      summary: Mulai Ride
+      description: Memulai ride yang berstatus ASSIGNED
+      operationId: startRide
+      tags:
+        - Rides
+      parameters:
+        - name: orderID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ride berhasil dimulai
+        "409":
+          description: Status tidak valid untuk start
+
+  /api/v1/rides/{orderID}/complete:
+    put:
+      summary: Selesaikan Ride
+      description: Menyelesaikan ride yang berstatus STARTED
+      operationId: completeRide
+      tags:
+        - Rides
+      parameters:
+        - name: orderID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ride berhasil diselesaikan
+        "409":
+          description: Status tidak valid untuk complete
+
+  /api/v1/rides/{orderID}/cancel:
+    put:
+      summary: Batalkan Ride
+      description: Membatalkan ride yang berstatus PENDING atau ASSIGNED
+      operationId: cancelRide
+      tags:
+        - Rides
+      parameters:
+        - name: orderID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ride berhasil dibatalkan
+        "409":
+          description: Status tidak valid untuk cancel
+
+  /api/v1/rides/user/{userID}:
+    get:
+      summary: Ambil Semua Ride User
+      description: Mengambil daftar semua ride untuk user tertentu dengan pagination
+      operationId: getUserRideOrders
+      tags:
+        - Rides
+      parameters:
+        - name: userID
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Daftar ride orders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedRideOrderResponse"
+
+components:
+  schemas:
+    Location:
+      type: object
+      required:
+        - latitude
+        - longitude
+        - address
+      properties:
+        latitude:
+          type: number
+          format: double
+          example: -6.2088
+        longitude:
+          type: number
+          format: double
+          example: 106.8456
+        address:
+          type: string
+          example: "Monas, Jakarta Pusat"
+
+    CreateRideOrderRequest:
+      type: object
+      required:
+        - user_id
+        - pickup_location
+        - dropoff_location
+      properties:
+        user_id:
+          type: string
+          example: "user-123"
+        pickup_location:
+          $ref: "#/components/schemas/Location"
+        dropoff_location:
+          $ref: "#/components/schemas/Location"
+
+    AssignDriverRequest:
+      type: object
+      required:
+        - driver_id
+      properties:
+        driver_id:
+          type: string
+          example: "driver-456"
+
+    RideOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        user_id:
+          type: string
+        driver_id:
+          type: string
+        pickup_location:
+          $ref: "#/components/schemas/Location"
+        dropoff_location:
+          $ref: "#/components/schemas/Location"
+        status:
+          type: string
+          enum: [PENDING, ASSIGNED, STARTED, COMPLETED, CANCELLED]
+        fare:
+          type: number
+          format: double
+          description: "Fare in IDR"
+        distance:
+          type: number
+          format: double
+          description: "Distance in km"
+        estimated_duration:
+          type: integer
+          description: "Duration in minutes"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RideOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/RideOrder"
+        message:
+          type: string
+
+    PaginatedRideOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RideOrder"
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total_items:
+              type: integer
+            total_pages:
+              type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "invalid request"

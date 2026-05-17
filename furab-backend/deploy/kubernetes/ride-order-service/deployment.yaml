@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ride-order-service
+  namespace: furab
+  labels:
+    app: ride-order-service
+    app.kubernetes.io/name: ride-order-service
+    app.kubernetes.io/part-of: furab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ride-order-service
+  template:
+    metadata:
+      labels:
+        app: ride-order-service
+    spec:
+      containers:
+        - name: ride-order-service
+          image: registry.furab.io/ride-order-service:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: furab-config
+                  key: db-host
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: furab-db-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: furab-db-secret
+                  key: password
+            - name: DB_NAME
+              value: "ride_order_service"
+            - name: KAFKA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: furab-config
+                  key: kafka-brokers
+            - name: ENVIRONMENT
+              value: "production"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10

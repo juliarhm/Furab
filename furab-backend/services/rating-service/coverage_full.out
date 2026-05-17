@@ -1,0 +1,17 @@
+mode: set
+furab-backend/services/rating-service/internal/service/rating_service.go:25.71,29.2 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:32.90,34.42 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:34.42,36.3 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:39.2,40.16 2 1
+furab-backend/services/rating-service/internal/service/rating_service.go:40.16,42.3 1 0
+furab-backend/services/rating-service/internal/service/rating_service.go:44.2,44.17 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:44.17,46.3 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:49.2,50.16 2 1
+furab-backend/services/rating-service/internal/service/rating_service.go:50.16,52.3 1 0
+furab-backend/services/rating-service/internal/service/rating_service.go:55.2,55.87 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:59.122,61.2 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:64.126,65.14 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:65.14,67.3 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:68.2,68.15 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:68.15,70.3 1 1
+furab-backend/services/rating-service/internal/service/rating_service.go:71.2,71.56 1 1

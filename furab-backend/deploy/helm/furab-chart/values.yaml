@@ -1,0 +1,108 @@
+# Default values for furab-chart
+# Override these values when deploying to different environments
+
+# Global settings
+global:
+  environment: production
+  imagePullPolicy: IfNotPresent
+
+# Image settings
+image:
+  registry: registry.furab.io
+  tag: latest
+
+# Database settings
+database:
+  host: furab-postgres
+  port: 5432
+  user: furab
+  password: furab_secret
+
+# Kafka settings
+kafka:
+  brokers: "furab-kafka:9092"
+
+# RabbitMQ settings
+rabbitmq:
+  url: "amqp://guest:guest@furab-rabbitmq:5672/"
+
+# Service replicas
+services:
+  auth:
+    replicas: 2
+    port: 8080
+  otp:
+    replicas: 1
+    port: 8080
+  user:
+    replicas: 2
+    port: 8080
+  driver:
+    replicas: 2
+    port: 8080
+  rideOrder:
+    replicas: 3
+    port: 8080
+  foodOrder:
+    replicas: 3
+    port: 8080
+  cart:
+    replicas: 2
+    port: 8080
+  matching:
+    replicas: 2
+    port: 8080
+  payment:
+    replicas: 2
+    port: 8080
+  wallet:
+    replicas: 2
+    port: 8080
+  settlement:
+    replicas: 1
+    port: 8080
+  pricing:
+    replicas: 2
+    port: 8080
+  promo:
+    replicas: 1
+    port: 8080
+  location:
+    replicas: 3
+    port: 8080
+  chat:
+    replicas: 2
+    port: 8080
+  notification:
+    replicas: 2
+    port: 8080
+  email:
+    replicas: 1
+    port: 8080
+  emergency:
+    replicas: 2
+    port: 8080
+  merchant:
+    replicas: 2
+    port: 8080
+  menu:
+    replicas: 2
+    port: 8080
+  rating:
+    replicas: 1
+    port: 8080
+  review:
+    replicas: 1
+    port: 8080
+  auditLog:
+    replicas: 1
+    port: 8080
+
+# Resource defaults
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
