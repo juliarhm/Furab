@@ -51,6 +51,7 @@ pipeline {
                         Write-Host "=== Vetting: $($s.Name) ==="
                         Set-Location $s.FullName
                         go vet ./...
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                         Set-Location ../..
                     }
                 '''
@@ -118,33 +119,42 @@ pipeline {
         // Stage 6: Push Docker Images to Registry
         stage('Push Image') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'origin/main'
-                    branch '*/main'
+                expression {
+                    env.GIT_BRANCH?.contains('main')
                 }
             }
             steps {
-                powershell '''
-                    Set-Location furab-backend
-                    Write-Host "Pushing Docker images..."
-                    $services = Get-ChildItem -Path services -Directory
-                    foreach ($s in $services) {
-                        Write-Host "=== Pushing: $($s.Name) ==="
-                        docker push "$env:DOCKER_REGISTRY/$($s.Name):$env:BUILD_NUMBER"
-                        docker push "$env:DOCKER_REGISTRY/$($s.Name):latest"
-                    }
-                '''
+                withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    powershell '''
+                        Set-Location furab-backend
+                        
+                        Write-Host "Logging in to Docker Registry..."
+                        $env:DOCKER_PASSWORD | docker login -u "$env:DOCKER_USER" --password-stdin $env:DOCKER_REGISTRY
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+                        Write-Host "Pushing Docker images..."
+                        $services = Get-ChildItem -Path services -Directory
+                        foreach ($s in $services) {
+                            Write-Host "=== Pushing: $($s.Name) ==="
+                            docker push "$env:DOCKER_REGISTRY/$($s.Name):$env:BUILD_NUMBER"
+                            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                            
+                            docker push "$env:DOCKER_REGISTRY/$($s.Name):latest"
+                            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                        }
+                        
+                        Write-Host "Logging out from Docker Registry..."
+                        docker logout $env:DOCKER_REGISTRY
+                    '''
+                }
             }
         }
 
         // Stage 7: Deploy to Kubernetes
         stage('Deploy to Kubernetes') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'origin/main'
-                    branch '*/main'
+                expression {
+                    env.GIT_BRANCH?.contains('main')
                 }
             }
             steps {
@@ -152,8 +162,10 @@ pipeline {
                     Set-Location furab-backend
                     Write-Host "Deploying to Kubernetes..."
                     kubectl apply -f deploy/kubernetes/namespace.yaml
+                    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-                    helm upgrade --install furab deploy/helm/furab-chart/ --namespace $env:KUBE_NAMESPACE --set image.tag=$env:BUILD_NUMBER --wait --timeout 300s
+                    helm upgrade --install furab deploy/helm/furab-chart/ --namespace $env:KUBE_NAMESPACE --create-namespace --set image.tag=$env:BUILD_NUMBER --wait --timeout 300s
+                    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                 '''
             }
         }
@@ -161,10 +173,8 @@ pipeline {
         // Stage 8: Verify Deployment
         stage('Verify') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'origin/main'
-                    branch '*/main'
+                expression {
+                    env.GIT_BRANCH?.contains('main')
                 }
             }
             steps {
@@ -177,6 +187,7 @@ pipeline {
                     foreach ($s in $services) {
                         Write-Host "=== Checking: $s ==="
                         kubectl rollout status deployment/$s -n $env:KUBE_NAMESPACE --timeout=120s
+                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                     }
                 '''
             }
