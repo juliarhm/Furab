@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = 'registry.furab.io'
+        DOCKER_REGISTRY = 'docker.io/injeolmi3'
         KUBE_NAMESPACE  = 'furab'
         GO_VERSION      = '1.22'
         DB_PORT         = '5433'
@@ -120,16 +120,19 @@ pipeline {
         stage('Push Image') {
             when {
                 expression {
-                    env.GIT_BRANCH?.contains('main')
+                    return env.BRANCH_NAME == 'main' ||
+                           env.GIT_BRANCH?.contains('main')
                 }
             }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     powershell '''
                         Set-Location furab-backend
                         
-                        Write-Host "Logging in to Docker Registry..."
-                        $env:DOCKER_PASSWORD | docker login -u "$env:DOCKER_USER" --password-stdin $env:DOCKER_REGISTRY
+                        Write-Host "Logging in to Docker Hub..."
+                        docker login docker.io `
+                            -u $env:DOCKER_USER `
+                            -p $env:DOCKER_PASS
                         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
                         Write-Host "Pushing Docker images..."
@@ -143,8 +146,8 @@ pipeline {
                             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                         }
                         
-                        Write-Host "Logging out from Docker Registry..."
-                        docker logout $env:DOCKER_REGISTRY
+                        Write-Host "Logging out from Docker Hub..."
+                        docker logout docker.io
                     '''
                 }
             }
@@ -154,7 +157,8 @@ pipeline {
         stage('Deploy to Kubernetes') {
             when {
                 expression {
-                    env.GIT_BRANCH?.contains('main')
+                    return env.BRANCH_NAME == 'main' ||
+                           env.GIT_BRANCH?.contains('main')
                 }
             }
             steps {
@@ -174,7 +178,8 @@ pipeline {
         stage('Verify') {
             when {
                 expression {
-                    env.GIT_BRANCH?.contains('main')
+                    return env.BRANCH_NAME == 'main' ||
+                           env.GIT_BRANCH?.contains('main')
                 }
             }
             steps {
