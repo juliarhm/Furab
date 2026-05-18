@@ -118,7 +118,11 @@ pipeline {
         // Stage 6: Push Docker Images to Registry
         stage('Push Image') {
             when {
-                branch 'main'
+                anyOf {
+                    branch 'main'
+                    branch 'origin/main'
+                    branch '*/main'
+                }
             }
             steps {
                 powershell '''
@@ -137,7 +141,11 @@ pipeline {
         // Stage 7: Deploy to Kubernetes
         stage('Deploy to Kubernetes') {
             when {
-                branch 'main'
+                anyOf {
+                    branch 'main'
+                    branch 'origin/main'
+                    branch '*/main'
+                }
             }
             steps {
                 powershell '''
@@ -153,7 +161,11 @@ pipeline {
         // Stage 8: Verify Deployment
         stage('Verify') {
             when {
-                branch 'main'
+                anyOf {
+                    branch 'main'
+                    branch 'origin/main'
+                    branch '*/main'
+                }
             }
             steps {
                 powershell '''
