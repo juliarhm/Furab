@@ -153,6 +153,20 @@ pipeline {
             }
         }
 
+        stage('Debug Kubernetes') {
+            steps {
+                powershell '''
+                    Write-Host "Current User:"
+                    whoami
+
+                    Write-Host "Kubectl Context:"
+                    kubectl config current-context
+
+                Write-Host "Nodes:"
+                kubectl get nodes
+            '''
+        }
+    }
         // Stage 7: Deploy to Kubernetes
         stage('Deploy to Kubernetes') {
             when {
